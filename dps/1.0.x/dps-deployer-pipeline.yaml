@@ -1348,22 +1348,28 @@ spec:
             export LDAP_PASSWD=$(oc extract --namespace openldap secret/openldap --keys=adminpassword --to=-)
 
             # cp4i
-            echo "Get APIC_ENDPOINT"
+            
             export APIC_ENDPOINT=$(oc get route -l app.kubernetes.io/name=platform-api-endpoint -n integration -o jsonpath="{.items[].spec.host}")
-            echo "Get client secret"
+            echo "APIC_ENDPOINT: $APIC_ENDPOINT"
+            
             APIC_SECRET=$(oc get  -n integration managementcluster api-management-mgmt -o jsonpath="{.status.toolkitCredentialSecret}")
             export APIC_CLIENT_ID=$(oc extract --namespace integration secret/$APIC_SECRET --keys=credential.json --to=- | jq -r .id)
+            echo "APIC_CLIENT_ID: $APIC_CLIENT_ID"
             export APIC_CLIENT_SECRET=$(oc extract --namespace integration secret/$APIC_SECRET --keys=credential.json --to=- | jq -r .secret)
-
+            echo "APIC_CLIENT_SECRET: $APIC_CLIENT_SECRET"
             export APIC_PWD=$(oc extract --namespace integration secret/api-management-mgmt-admin-pass --keys=password --to=-)
+            echo "APIC_PWD: $APIC_PWD"
 
             ### stepzen
-            oc create secret -n stepzen generic stepzen-keys --from-literal admin_key="$admin_key" --from-literal api_key="$api_key" --from-literal route="graphql.zen.$cluster_domain"
             stepzen_adminkey=$(oc extract --namespace stepzen secret/stepzen-keys --keys=admin_key --to=-)
             stepzen_apikey=$(oc extract --namespace stepzen secret/stepzen-keys --keys=api_key --to=-)
+            echo "stepzen_adminkey: $stepzen_adminkey"
+            echo "stepzen_apikey: $stepzen_apikey"
 
             ### create config map vars-for-python
+            #TODO check if secret exists
             echo "Creating vars-for-python"
+            oc delete configmap -n cpd vars-for-python
             oc create configmap -n cpd vars-for-python \
               --from-literal=cp4d_endpoint=$cpd_route \
               --from-literal=cpadmin_password=$initial_admin_password \
@@ -2329,7 +2335,7 @@ spec:
             spec:
               license:
                 accept: true
-                license: L-VTPK-22YZPK
+                license: L-JTPV-KYG8TF
               replicas: 1
               version: 16.1.0
             EOF
@@ -2680,7 +2686,7 @@ spec:
                       \"ldap_binddn\": \"cn=admin,dc=acme,dc=org\",
                       \"ldap_bindpassword\": \"$LDAP_PASSWD\"
                   }
-              }" | jq .status)
+              }" | jq -r .status)
 
               echo "Current status: $TEST_RESULT"
               # Check to see if the deployment exists and apply patch if it does
@@ -3345,6 +3351,8 @@ spec:
             echo "Route for graphql account is: graphql.zen.$cluster_domain"
 
             echo "create secret"
+            #TODO check if secret exists
+            oc delete secret -n stepzen stepzen-keys
             oc create secret -n stepzen generic stepzen-keys --from-literal admin_key="$admin_key" --from-literal api_key="$api_key" --from-literal route="graphql.zen.$cluster_domain"
       taskRef:
         kind: Task
@@ -3410,8 +3418,6 @@ spec:
             # setup vars      #
             ###################
 
-            ### MOVED TO PIPELINE
-
             echo "Get APIC_ENDPOINT"
             export APIC_ENDPOINT=$(oc get route -l app.kubernetes.io/name=platform-api-endpoint -n integration -o jsonpath="{.items[].spec.host}")
             echo "Get client secret"
@@ -3426,6 +3432,34 @@ spec:
 
             export APIC_PWD=$(oc get secret "api-management-mgmt-admin-pass" -n integration -o jsonpath="{.data.password}"| base64 -d)
 
+            export APIC_MAIL_SERVER="apic-mail"
+            export MAIL_SERVER_HOST="mailserver.development-mailserver"
+            export MAIL_SERVER_PORT=1025
+
+            export BUILD_DIR=rest-build
+            ##### Provider Org
+            export CUSTOMER_NAME=acme
+            export PORG_DEV_TITLE="ACME"
+            export PORG_DEV_NAME=$(echo ${PORG_DEV_TITLE// /-} | awk '{print tolower($0)}')
+
+            export PORG_DEV_OWNER_FN="acme"
+            export PORG_DEV_OWNER_LN="admin"
+            export PORG_DEV_OWNER_EMAIL="${PORG_DEV_OWNER_USER}@${CUSTOMER_NAME}.org"
+            export PORG_DEV_OWNER_USER="developer-1"
+            export PORG_DEV_OWNER_PWD="passw0rd"
+            export CAT_DEV_TITLE="Marketplace"
+            export CAT_DEV_NAME=$(echo ${CAT_DEV_TITLE// /-} | awk '{print tolower($0)}')
+            export APIC_PROVIDER_REALM="provider/openldap"
+
+            export CORG_DEV_TITLE="Consumer Org"
+            export CORG_DEV_NAME=$(echo ${CORG_DEV_TITLE// /-} | awk '{print tolower($0)}')
+
+            export CORG_DEV_OWNER_FN="consumer"
+            export CORG_DEV_OWNER_LN="${CUSTOMER_NAME}"
+            export CORG_DEV_OWNER_USER="consumer-1"
+            export CORG_DEV_OWNER_PWD="passw0rd"
+            export CORG_DEV_OWNER_EMAIL="${CORG_DEV_OWNER_USER}@${CUSTOMER_NAME}.org"
+
             export BEARER_TOKEN=$(curl -k -X POST https://$APIC_ENDPOINT/api/token \
             -H 'Content-Type: application/json' \
             -d "{\"username\": \"$APIC_ADMIN_USER\",
@@ -3439,11 +3473,6 @@ spec:
             ######################################################
             # Add New Mail Server Definition and Send Test Email #
             ######################################################
-            export APIC_MAIL_SERVER="apic-mail"
-            export MAIL_SERVER_HOST="mailserver.development-mailserver"
-            export MAIL_SERVER_PORT=1025
-
-            export BUILD_DIR=rest-build
             mkdir ${BUILD_DIR}
 
             curl -k --request POST \
@@ -3572,16 +3601,6 @@ spec:
             ###########################
             # Create Development pOrg #
             ###########################
-            ##### Provider Org
-            export CUSTOMER_NAME=acme
-            export PORG_DEV_TITLE="ACME"
-            export PORG_DEV_NAME=$(echo ${PORG_DEV_TITLE// /-} | awk '{print tolower($0)}')
-
-            export PORG_DEV_OWNER_FN="acme"
-            export PORG_DEV_OWNER_LN="admin"
-            export PORG_DEV_OWNER_EMAIL="${PORG_DEV_OWNER_USER}@${CUSTOMER_NAME}.org"
-            export PORG_DEV_OWNER_USER="developer-1"
-            export PORG_DEV_OWNER_PWD="passw0rd"
 
             echo " Get user $PORG_DEV_OWNER_USER in APIC using generated ${BUILD_DIR}/${PORG_DEV_OWNER_USER}.json file..."
             #apic users:get --server $APIC_MGMT_SERVER --org $APIC_ADMIN_ORG --user-registry openldap --format json --output - developer-1 > ${BUILD_DIR}/${PORG_DEV_OWNER_USER}-create-output.json
@@ -3623,10 +3642,7 @@ spec:
             # Create & Config Catalog   #
             #############################
 
-            "Login to POrg"
-            export APIC_PROVIDER_REALM="provider/openldap"
-            export CAT_DEV_TITLE="Marketplace"
-            export CAT_DEV_NAME=$(echo ${CAT_DEV_TITLE// /-} | awk '{print tolower($0)}')
+            echo "Login to POrg"
 
             export ORG_TOKEN=$(curl -k -X POST https://$APIC_ENDPOINT/api/token \
             -H 'Content-Type: application/json' \
@@ -3650,7 +3666,7 @@ spec:
             #apic catalogs:create --server $APIC_MGMT_SERVER --org $PORG_DEV_NAME --format json ${BUILD_DIR}/${CAT_DEV_NAME}-dev-create.json > ${BUILD_DIR}/${CAT_DEV_NAME}-dev-create-output.json
 
             curl -k --request POST \
-              --url https://$APIC_MGMT_SERVER/api/orgs/$PORG_DEV_NAME/catalogs \
+              --url https://$APIC_ENDPOINT/api/orgs/$PORG_DEV_NAME/catalogs \
               --header "Authorization: Bearer $ORG_TOKEN" \
               --header 'accept: application/json' \
               --header 'content-type: application/json' \
@@ -3664,7 +3680,7 @@ spec:
             #CAT_DEV_PORTAL_SERVICE_URL=$(apic portal-services:list --server $APIC_MGMT_SERVER --scope org --org $PORG_DEV_NAME --format json | jq -r '.results[].url')
 
             CAT_DEV_PORTAL_SERVICE_URL=$(curl -k --request GET \
-              --url "https://$APIC_MGMT_SERVER/api/orgs/$PORG_DEV_NAME/portal-services" \
+              --url "https://$APIC_ENDPOINT/api/orgs/$PORG_DEV_NAME/portal-services" \
               --header "Authorization: Bearer $ORG_TOKEN" \
               --header 'accept: application/json' | jq -r '.results[].url')
 
@@ -3672,7 +3688,7 @@ spec:
 
             echo "Setup Openldap as UR for catalog"
             CAT_OPEN_LDAP_URL=$(curl -k --request POST \
-              --url https://$APIC_MGMT_SERVER/api/catalogs/$PORG_DEV_NAME/$CAT_DEV_NAME/configured-catalog-user-registries \
+              --url https://$APIC_ENDPOINT/api/catalogs/$PORG_DEV_NAME/$CAT_DEV_NAME/configured-catalog-user-registries \
               --header "Authorization: Bearer $ORG_TOKEN" \
               --header 'accept: application/json' \
               --header 'content-type: application/json' \
@@ -3681,7 +3697,7 @@ spec:
 
             echo "Setup Openldap as UR for catalog APIs"
             CAT_API_LDAP_URL=$(curl -k --request POST \
-              --url https://$APIC_MGMT_SERVER/api/catalogs/$PORG_DEV_NAME/$CAT_DEV_NAME/configured-api-user-registries \
+              --url https://$APIC_ENDPOINT/api/catalogs/$PORG_DEV_NAME/$CAT_DEV_NAME/configured-api-user-registries \
               --header "Authorization: Bearer $ORG_TOKEN" \
               --header 'accept: application/json' \
               --header 'content-type: application/json' \
@@ -3690,7 +3706,7 @@ spec:
 
             echo "Get catalog settings"
             curl -k --request GET \
-              --url "https://$APIC_MGMT_SERVER/api/catalogs/$PORG_DEV_NAME/$CAT_DEV_NAME/settings" \
+              --url "https://$APIC_ENDPOINT/api/catalogs/$PORG_DEV_NAME/$CAT_DEV_NAME/settings" \
               --header "Authorization: Bearer $ORG_TOKEN" \
               --header 'accept: application/json' > ${BUILD_DIR}/${CAT_DEV_NAME}-settings.json
 
@@ -3704,7 +3720,7 @@ spec:
               > ${BUILD_DIR}/${CAT_DEV_NAME}-dev-catalog-settings-update.json
 
             curl -k --request PUT \
-              --url https://$APIC_MGMT_SERVER/api/catalogs/$PORG_DEV_NAME/$CAT_DEV_NAME/settings \
+              --url https://$APIC_ENDPOINT/api/catalogs/$PORG_DEV_NAME/$CAT_DEV_NAME/settings \
               --header "Authorization: Bearer $ORG_TOKEN" \
               --header 'accept: application/json' \
               --header 'content-type: application/json' \
@@ -3714,16 +3730,6 @@ spec:
             ######################################
             # Create Owner for Dev Consumer cOrg #
             ######################################
-            # echo " "
-            export CORG_DEV_TITLE="Consumer Org"
-            export CORG_DEV_NAME=$(echo ${CORG_DEV_TITLE// /-} | awk '{print tolower($0)}')
-
-            export CORG_DEV_OWNER_FN="consumer"
-            export CORG_DEV_OWNER_LN="${CUSTOMER_NAME}"
-            export CORG_DEV_OWNER_USER="consumer-1"
-            export CORG_DEV_OWNER_PWD="passw0rd"
-            export CORG_DEV_OWNER_EMAIL="${CORG_DEV_OWNER_USER}@${CUSTOMER_NAME}.org"
-
 
             echo "  Creating the cOrg owner ($CORG_DEV_OWNER_USER) in APIC"
             #apic users:create --server $APIC_MGMT_SERVER --org $PORG_DEV_NAME --user-registry openldap --format json ${BUILD_DIR}/${CORG_DEV_NAME}-owner.json > ${BUILD_DIR}/${CORG_DEV_NAME}-owner-create-output.json
@@ -3734,7 +3740,6 @@ spec:
               --header 'accept: application/json' \
               --header 'content-type: application/json' \
               --data "{\"username\":\"$CORG_DEV_OWNER_USER\", \"email\":\"$CORG_DEV_OWNER_EMAIL\"}" > ${BUILD_DIR}/${CORG_DEV_OWNER_USER}-create-output.json
-
 
 
             echo "  Get the URL for the Owner user"
