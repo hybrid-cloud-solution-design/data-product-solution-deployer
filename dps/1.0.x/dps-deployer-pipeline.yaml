@@ -2473,6 +2473,45 @@ spec:
             gidNumber: 1001
             homeDirectory: /home/provider-2
 
+            # provider-3, users, acme.org
+            dn: cn=provider-3,ou=users,dc=acme,dc=org
+            cn: provider-3
+            sn: Bar2
+            objectClass: inetOrgPerson
+            objectClass: posixAccount
+            objectClass: shadowAccount
+            userPassword:: cGFzc3cwcmQ=
+            uid: provider-3
+            uidNumber: 1002
+            gidNumber: 1002
+            homeDirectory: /home/provider-3
+
+            # provider-4, users, acme.org
+            dn: cn=provider-4,ou=users,dc=acme,dc=org
+            cn: provider-4
+            sn: Bar2
+            objectClass: inetOrgPerson
+            objectClass: posixAccount
+            objectClass: shadowAccount
+            userPassword:: cGFzc3cwcmQ=
+            uid: provider-4
+            uidNumber: 1003
+            gidNumber: 1003
+            homeDirectory: /home/provider-4
+
+            # provider-5, users, acme.org
+            dn: cn=provider-5,ou=users,dc=acme,dc=org
+            cn: provider-5
+            sn: Bar2
+            objectClass: inetOrgPerson
+            objectClass: posixAccount
+            objectClass: shadowAccount
+            userPassword:: cGFzc3cwcmQ=
+            uid: provider-5
+            uidNumber: 1004
+            gidNumber: 1004
+            homeDirectory: /home/provider-5                                   
+
             # developer-1, users, acme.org
             dn: cn=developer-1,ou=users,dc=acme,dc=org
             cn: developer-1
@@ -2482,8 +2521,8 @@ spec:
             objectClass: shadowAccount
             userPassword:: cGFzc3cwcmQ=
             uid: developer-1
-            uidNumber: 1004
-            gidNumber: 1004
+            uidNumber: 1005
+            gidNumber: 1005
             homeDirectory: /home/developer-1
             mail: developer-1@acme.org
 
@@ -2521,6 +2560,9 @@ spec:
             objectClass: groupOfNames
             member: cn=provider-1,ou=users,dc=acme,dc=org
             member: cn=provider-2,ou=users,dc=acme,dc=org
+            member: cn=provider-3,ou=users,dc=acme,dc=org
+            member: cn=provider-4,ou=users,dc=acme,dc=org
+            member: cn=provider-5,ou=users,dc=acme,dc=org
             member: cn=developer-1,ou=users,dc=acme,dc=org
             member: cn=consumer-1,ou=users,dc=acme,dc=org
             member: cn=consumer-2,ou=users,dc=acme,dc=org
