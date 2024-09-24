@@ -1303,6 +1303,10 @@ spec:
             echo "Minio (object store) parameters"
             oc create route edge ibm-lh-lakehouse-minio-console --service=ibm-lh-lakehouse-minio-svc --port=9001 -n cpd
             minio_console=$(oc get route ibm-lh-lakehouse-minio-console -n cpd --template='{{ .spec.host }}')
+            
+            echo "Create Minio S3 route for portal file upload"
+            oc create route edge ibm-lh-lakehouse-minio-s3 --service ibm-lh-lakehouse-minio-svc --port 9000 -n cpd
+            export S3_ENDPOINT=$(oc get route ibm-lh-lakehouse-minio-s3 -n cpd -o jsonpath="{.spec.host}")
 
             LH_S3_ACCESS_KEY=$(oc get secret ibm-lh-minio-secret -n cpd -o jsonpath='{.data.LH_S3_ACCESS_KEY}' | base64 -d)
             LH_S3_SECRET_KEY=$(oc get secret ibm-lh-minio-secret -n cpd -o jsonpath='{.data.LH_S3_SECRET_KEY}' | base64 -d)
@@ -1310,6 +1314,7 @@ spec:
             echo "LH_S3_ACCESS_KEY: $LH_S3_ACCESS_KEY"
             echo "LH_S3_SECRET_KEY: $LH_S3_SECRET_KEY"
             echo "Minio console: https://$minio_console"
+            echo "Minio s3: https://$S3_ENDPOINT"
 
             oc patch configmap/pipeline-output -p "{\"data\":{\"Status\":\"Pipeline run Successful\",\"CP4D-Console-Route\":\"${cpd_route}\",\"CP4D-Initial-Admin-Username\":\"admin\",\"CP4D-Initial-Admin-Password\":\"${initial_admin_password}\"}}"
             
@@ -1337,12 +1342,17 @@ spec:
             oc create route edge ibm-lh-lakehouse-minio-console --service=ibm-lh-lakehouse-minio-svc --port=9001 -n cpd
             minio_console=$(oc get route ibm-lh-lakehouse-minio-console -n cpd --template='{{ .spec.host }}')
 
+            echo "Create Minio S3 route for portal file upload"
+            oc create route edge ibm-lh-lakehouse-minio-s3 --service ibm-lh-lakehouse-minio-svc --port 9000 -n cpd
+            export S3_ENDPOINT=$(oc get route ibm-lh-lakehouse-minio-s3 -n cpd -o jsonpath="{.spec.host}")
+
             LH_S3_ACCESS_KEY=$(oc get secret ibm-lh-minio-secret -n cpd -o jsonpath='{.data.LH_S3_ACCESS_KEY}' | base64 -d)
             LH_S3_SECRET_KEY=$(oc get secret ibm-lh-minio-secret -n cpd -o jsonpath='{.data.LH_S3_SECRET_KEY}' | base64 -d)
             echo "Endpoint: ibm-lh-lakehouse-minio-svc.cpd.svc.cluster.local:9000"
             echo "LH_S3_ACCESS_KEY: $LH_S3_ACCESS_KEY"
             echo "LH_S3_SECRET_KEY: $LH_S3_SECRET_KEY"
             echo "Minio console: https://$minio_console"
+            echo "Minio s3: https://$S3_ENDPOINT"
 
             # openldap
             export LDAP_PASSWD=$(oc extract --namespace openldap secret/openldap --keys=adminpassword --to=-)
@@ -1374,6 +1384,7 @@ spec:
               --from-literal=cp4d_endpoint=$cpd_route \
               --from-literal=cpadmin_password=$initial_admin_password \
               --from-literal=COS_ENDPOINT=ibm-lh-lakehouse-minio-svc.cpd.svc.cluster.local:9000 \
+              --from-literal=S3_ENDPOINT=$S3_ENDPOINT \
               --from-literal=COS_ACCESS_KEY=$LH_S3_ACCESS_KEY \
               --from-literal=COS_SECRET_KEY=$LH_S3_SECRET_KEY \
               --from-literal=apic_endpoint=$APIC_ENDPOINT \
@@ -2459,6 +2470,7 @@ spec:
             uidNumber: 1000
             gidNumber: 1000
             homeDirectory: /home/provider-1
+            mail: provider-1@consumer-org.org
 
             # provider-2, users, acme.org
             dn: cn=provider-2,ou=users,dc=acme,dc=org
@@ -2472,6 +2484,7 @@ spec:
             uidNumber: 1001
             gidNumber: 1001
             homeDirectory: /home/provider-2
+            mail: provider-2@consumer-org.org
 
             # provider-3, users, acme.org
             dn: cn=provider-3,ou=users,dc=acme,dc=org
@@ -2485,6 +2498,7 @@ spec:
             uidNumber: 1002
             gidNumber: 1002
             homeDirectory: /home/provider-3
+            mail: provider-3@consumer-org.org
 
             # provider-4, users, acme.org
             dn: cn=provider-4,ou=users,dc=acme,dc=org
@@ -2498,6 +2512,7 @@ spec:
             uidNumber: 1003
             gidNumber: 1003
             homeDirectory: /home/provider-4
+            mail: provider-4@consumer-org.org
 
             # provider-5, users, acme.org
             dn: cn=provider-5,ou=users,dc=acme,dc=org
@@ -2510,7 +2525,8 @@ spec:
             uid: provider-5
             uidNumber: 1004
             gidNumber: 1004
-            homeDirectory: /home/provider-5                                   
+            homeDirectory: /home/provider-5      
+            mail: provider-5@consumer-org.org                             
 
             # developer-1, users, acme.org
             dn: cn=developer-1,ou=users,dc=acme,dc=org
