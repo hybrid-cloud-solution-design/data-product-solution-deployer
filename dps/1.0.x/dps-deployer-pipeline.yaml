@@ -2407,6 +2407,9 @@ spec:
               profile: n1xc7.m48
               version: 10.0.8.0
               storageClassName: ocs-storagecluster-ceph-rbd
+              management:
+                billing:
+                  enabled: true              
             EOF
       taskRef:
         kind: Task
@@ -3421,7 +3424,7 @@ spec:
         - name: manifest-dir
           workspace: workspace   
     ####### APIC ACME config
-    - name: conigure-acme-org
+    - name: configure-acme-org
       params:
         - name: SCRIPT
           value: |-
@@ -3469,6 +3472,9 @@ spec:
                 exit 1
               fi
             done 
+
+            ### PATCH billing if yaml in install doesnt work
+            # oc patch -n integration managementcluster/api-management-mgmt --type merge -p '{"spec":{"billing":{"enabled":true}}}'
 
             echo "setup variables"
 
@@ -3563,7 +3569,7 @@ spec:
 
             echo "  Update New Mail Server URL and save in cloud-settings-ms-updated.json file"
             jq --arg MAIL_SERVER_URL "$MAIL_SERVER_URL" \
-              '.mail_server_url=$MAIL_SERVER_URL'\
+              '.mail_server_url=$MAIL_SERVER_URL | .email_sender.name="APIC Administrator" | .email_sender.address="admin@apiconnect.net" '\
               ${BUILD_DIR}/cloud-settings-output.json > ${BUILD_DIR}/cloud-setting-ms-updated.json
 
             echo "  Add the New Mail Server to the cloud settings in APIC"
