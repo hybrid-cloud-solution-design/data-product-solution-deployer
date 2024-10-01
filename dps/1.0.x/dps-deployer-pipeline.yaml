@@ -3400,9 +3400,13 @@ spec:
             cat stepzen-admin.sh | grep urandom
             
             echo "get admin key"
-            admin_key=$(./stepzen-admin.sh get-adminkey | grep graphql)
+            ./stepzen-admin.sh get-adminkey > adminkey.log
+            cat adminkey.log
+            admin_key=$(cat adminkey.log| grep graphql)
             echo "get api key"
-            api_key=$(./stepzen-admin.sh get-apikey | grep graphql)
+            ./stepzen-admin.sh get-apikey > apikey.log
+            cat apikey.log
+            api_key=$(cat apikey.log | grep graphql)
 
             cluster_domain=$(oc get ingresses.config/cluster -o jsonpath={.spec.domain})
             echo "Cluster domain is: $cluster_domain"
@@ -3838,7 +3842,8 @@ spec:
               --header 'Content-Type: application/json' \
               --header "Authorization: Bearer $ORG_TOKEN" \
               --data-raw '{
-              "title": "Data_Consumer_App"
+              "title": "Data_Consumer_App",
+              "name": "data_consumer_app"
             }'
 
       taskRef:
