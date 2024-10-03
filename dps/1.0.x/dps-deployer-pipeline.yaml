@@ -1370,6 +1370,12 @@ spec:
             export APIC_PWD=$(oc extract --namespace integration secret/api-management-mgmt-admin-pass --keys=password --to=-)
             echo "APIC_PWD: $APIC_PWD"
 
+            ### apic data app creds
+            data_app_client_id=$(oc extract --namespace integration secret/data-app-keys --keys=client_id --to=-)
+            data_app_client_secret=$(oc extract --namespace integration secret/data-app-keys --keys=client_secret --to=-)
+            echo "data_app_client_id: $data_app_client_id"
+            echo "data_app_client_secret: $data_app_client_secret"
+
             ### stepzen
             stepzen_adminkey=$(oc extract --namespace stepzen secret/stepzen-keys --keys=admin_key --to=-)
             stepzen_apikey=$(oc extract --namespace stepzen secret/stepzen-keys --keys=api_key --to=-)
@@ -1392,8 +1398,10 @@ spec:
               --from-literal=apic_password=$APIC_PWD \
               --from-literal=apic_client_id=$APIC_CLIENT_ID \
               --from-literal=apic_client_secret=$APIC_CLIENT_SECRET \
+              --from-literal=data_app_client_id=$data_app_client_id \
+              --from-literal=data_app_client_secret=$data_app_client_secret \
               --from-literal=stepzen_adminkey=$stepzen_adminkey \
-              --from-literal=stepzen_apikey=$stepzen_apikey 
+              --from-literal=stepzen_apikey=$stepzen_apikey               
 
             oc patch configmap/pipeline-output -p "{\"data\":{\"Status\":\"Pipeline run Successful\",\"CP4D-Console-Route\":\"${cpd_route}\",\"CP4D-Initial-Admin-Username\":\"cpadmin\",\"CP4D-Initial-Admin-Password\":\"${initial_admin_password}\"}}"
   tasks:
@@ -3836,15 +3844,25 @@ spec:
 
 
             echo "Creating the cOrg ($CORG_DEV_TITLE) in APIC using generated ${BUILD_DIR}/${CORG_DEV_NAME}.json file..."
-            curl -k --request POST \
+            data_app_response=$(curl -k --request POST \
               --url "https://$APIC_ENDPOINT/api/consumer-orgs/$PORG_DEV_NAME/$CAT_DEV_NAME/$CORG_DEV_NAME/apps" \
               --header 'Accept: application/json' \
               --header 'Content-Type: application/json' \
               --header "Authorization: Bearer $ORG_TOKEN" \
               --data-raw '{
-              "title": "Data_Consumer_App",
-              "name": "data_consumer_app"
-            }'
+              "title": "Data_Consumer_App1",
+              "name": "data_consumer_app1"
+            }')
+
+            echo $data_app_response
+            client_id=$(echo $data_app_response | jq -r .client_id)
+            client_secret=$(echo $data_app_response | jq -r .client_secret)
+
+            echo "create data_app secret"
+            #TODO check if secret exists
+            oc delete secret -n integration data-app-keys
+            oc create secret -n integration generic data-app-keys --from-literal client_id="$admin_key" --from-literal client_secret="$client_secret" --from-literal route="graphql.zen.$cluster_domain"
+
 
       taskRef:
         kind: Task
