@@ -3850,8 +3850,8 @@ spec:
               --header 'Content-Type: application/json' \
               --header "Authorization: Bearer $ORG_TOKEN" \
               --data-raw '{
-              "title": "Data_Consumer_App1",
-              "name": "data_consumer_app1"
+              "title": "Data_Consumer_App",
+              "name": "data_consumer_app"
             }')
 
             echo $data_app_response
