@@ -3861,7 +3861,7 @@ spec:
             echo "create data_app secret"
             #TODO check if secret exists
             oc delete secret -n integration data-app-keys
-            oc create secret -n integration generic data-app-keys --from-literal client_id="$admin_key" --from-literal client_secret="$client_secret" --from-literal route="graphql.zen.$cluster_domain"
+            oc create secret -n integration generic data-app-keys --from-literal client_id="$client_id" --from-literal client_secret="$client_secret" 
 
 
       taskRef:
