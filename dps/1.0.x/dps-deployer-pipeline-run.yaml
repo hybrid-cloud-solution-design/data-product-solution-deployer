@@ -4,7 +4,7 @@ metadata:
   generateName: data-product-solution-deployer-0.0.1-run-
 spec:
   timeouts:
-    pipeline: 12h0m0s
+    pipeline: 16h0m0s
   pipelineRef:
     name: data-product-solution-deployer-0.0.1
   taskRunTemplate:
